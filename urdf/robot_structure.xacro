@@ -48,7 +48,7 @@
                 <box size="0.15 0.15 0.2"/>
             </geometry>
         </collision>
-        <xacro:inertial_box mass="0.8" x="0.15" y="0.15" z="0.3">
+        <xacro:inertial_box mass="1" x="0.15" y="0.15" z="0.3">
             <origin xyz="0.075 0 0.1" rpy="0 0 0"/>
         </xacro:inertial_box>
     </link>
@@ -59,9 +59,9 @@
     <!-- LEFT WHEEL LINK -->
 
     <joint name="left_wheel_joint" type="continuous">
-        <parent link="base_link"/>
+        <parent link="chassis"/>
         <child link="left_wheel"/>
-        <origin xyz="0.065 0.085 0" rpy="-${pi/2} 0 0" />
+        <origin xyz="0.115 0.085 0" rpy="-${pi/2} 0 0" />
         <axis xyz="0 0 1"/>
     </joint>
 
@@ -89,9 +89,9 @@
     <!-- RIGHT WHEEL LINK -->
 
     <joint name="right_wheel_joint" type="continuous">
-        <parent link="base_link"/>
+        <parent link="chassis"/>
         <child link="right_wheel"/>
-        <origin xyz="0.065 -0.085 0" rpy="${pi/2} 0 0" />
+        <origin xyz="0.115 -0.085 0" rpy="${pi/2} 0 0" />
         <axis xyz="0 0 -1"/>
     </joint>
 
@@ -173,8 +173,8 @@
 
     <gazebo reference="caster_wheel_sphere">
         <material>Gazebo/White</material>
-        <mu1 value = "0.01"/>
-        <mu2 value = "0.01"/>
+        <mu1 value = "0.001"/>
+        <mu2 value = "0.001"/>
     </gazebo>
     
     
