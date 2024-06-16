@@ -53,23 +53,7 @@ def generate_launch_description():
     
     teleop_robot = create_teleop_node("Robot")
 
-    rviz_config_file = os.path.join(get_package_share_directory(package_name), 'config', 'Slam.rviz')
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        output='screen',
-        arguments=['-d', rviz_config_file]
-    )
-
-    map_saver = Node(
-        package='nav2_map_server',
-        executable='map_saver_cli',
-        name='map_saver',
-        output='screen',
-        parameters=[{'save_map_timeout': 2000}],
-        arguments=['-f', os.path.join(get_package_share_directory(package_name), 'maps', 'my_map')]
-    )
+    
 
     return LaunchDescription([
         rsp,
@@ -77,6 +61,4 @@ def generate_launch_description():
         spawn_entity,
         slam_toolbox,
         teleop_robot,
-        rviz_node,
-        map_saver
     ])
