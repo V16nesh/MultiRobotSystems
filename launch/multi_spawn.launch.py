@@ -1,84 +1,110 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, RegisterEventHandler
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch_ros.actions import Node
-from launch.event_handlers import OnProcessExit
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+import xacro
 
 def generate_launch_description():
-    package_name = 'multi_robot_system'
+    use_sim_time = LaunchConfiguration('use_sim_time')
+    namespace1 = LaunchConfiguration('namespace1')
+    namespace2 = LaunchConfiguration('namespace2')
+   
+    pkg_path = os.path.join(get_package_share_directory('multi_robot_system'))
+    rviz_config_file = os.path.join(pkg_path, 'config', 'multi_spawn.rviz')
     world_file_name = 'house.world'
-    world_file_path = os.path.join(get_package_share_directory(package_name), 'worlds', world_file_name)
+    world_file_path = os.path.join(pkg_path, 'worlds', world_file_name)
+    xacro_file1 = os.path.join(pkg_path, 'urdf', 'bot1.urdf.xacro')
+    xacro_file2 = os.path.join(pkg_path, 'urdf', 'bot2.urdf.xacro')
+    robot_description_config1 = xacro.process_file(xacro_file1)
+    robot_description_config2 = xacro.process_file(xacro_file2)
+    params1 = {'robot_description': robot_description_config1.toxml(), 'use_sim_time': use_sim_time}
+    params2 = {'robot_description': robot_description_config2.toxml(), 'use_sim_time': use_sim_time}
 
-    coordinates = [(-1.5, 1.0), (-1.0, 1.0)]
-    last_action = None
 
-    ld = LaunchDescription()
-
-    gazebo = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([os.path.join(
-            get_package_share_directory('gazebo_ros'), 'launch', 'gazebo.launch.py')]),
-        launch_arguments={'world': world_file_path}.items()
+    node_robot_state_publisher1 = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        output='screen',
+        namespace=namespace1,
+        parameters=[params1]
     )
-    ld.add_action(gazebo)
+    node_robot_state_publisher2 = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        output='screen',
+        namespace=namespace2,
+        parameters=[params2]
+    )
 
-    def create_spawn_entity_node(name, namespace, x, y):
-        return Node(
-            package='gazebo_ros',
-            executable='spawn_entity.py',
-            arguments=[
-                '-topic', f'{namespace}/robot_description',
-                '-entity', name,
-                '-robot_namespace', namespace,
-                '-x', str(x),
-                '-y', str(y),
-                '-z', '0.01'
-            ],
-            output='screen'
-        )
-    def create_teleop_node(namespace):
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        arguments=['-d', rviz_config_file]
+    )
+
+    gazebo_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory('gazebo_ros'), 'launch', 'gazebo.launch.py')
+        ),
+        launch_arguments={'world': world_file_path}.items(),
+        
+
+    )
+    spawn_entity1 = Node(package='gazebo_ros', executable='spawn_entity.py',
+                        arguments=['-topic', '/robot1/robot_description',
+                                   '-entity', 'robot1',
+                                   '-x', '0',
+                                   '-y', '2',
+                                   '-z', '0'],
+                        output='screen')
+
+    spawn_entity2 = Node(package='gazebo_ros', executable='spawn_entity.py',
+                        arguments=['-topic', '/robot2/robot_description',
+                                   '-entity', 'robot2',
+                                   '-x', '2',
+                                   '-y', '0',
+                                   '-z', '0'],
+                        output='screen')
+    def create_teleop_node(robotname, cmd_vel_topic):
         return Node(
             package='teleop_twist_keyboard',
             executable='teleop_twist_keyboard',
-            name='teleop_twist_keyboard',
-            namespace=namespace,
+            name=f'teleop_{robotname}',
             output='screen',
-            remappings=[('/cmd_vel', f'{namespace}/cmd_vel')],
-            prefix=['xterm -e']
+            prefix=['xterm -e'],
+            remappings=[('/cmd_vel', cmd_vel_topic)]
         )
+    
+    teleop_robot1 = create_teleop_node("robot1", "/robot1/cmd_vel")
+    teleop_robot2 = create_teleop_node("robot2", "/robot2/cmd_vel")
 
-    for index, (x, y) in enumerate(coordinates):
-        name = f"robot{index}"
-        namespace = f"/robot{index}"
+   
+    return LaunchDescription([
+        DeclareLaunchArgument(
+            'use_sim_time',
+            default_value='false',
+            description='Use sim time if true'),
+        DeclareLaunchArgument(
+            'namespace1',
+            default_value='/robot1',  
+            description='Namespace for robot1'),
+        DeclareLaunchArgument(
+            'namespace2',
+            default_value='/robot2', 
+            description='Namespace for robot2'),
 
-        rsp = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource([os.path.join(
-                get_package_share_directory(package_name), 'launch', 'robot_state_pub.launch.py'
-            )]), launch_arguments={
-                'use_sim_time': 'true',
-                'namespace': namespace
-            }.items()
-        )
-
-        spawn_robot = create_spawn_entity_node(name, namespace, x, y)
-        teleop_robot = create_teleop_node(namespace)
-
-        ld.add_action(rsp)
+        gazebo_launch,
+        node_robot_state_publisher1,
+        node_robot_state_publisher2,
+        rviz_node,
+        spawn_entity1,
+        spawn_entity2,
+        teleop_robot1,
+        teleop_robot2
         
-        if last_action is None:
-            ld.add_action(spawn_robot)
-        else:
-            spawn_robot_event = RegisterEventHandler(
-                event_handler=OnProcessExit(
-                    target_action=last_action,
-                    on_exit=[spawn_robot],
-                )
-            )
-            ld.add_action(spawn_robot_event)
-
-        last_action = spawn_robot
-
-        ld.add_action(teleop_robot)
-
-    return ld
+    ])
