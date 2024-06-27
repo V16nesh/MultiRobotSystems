@@ -13,7 +13,7 @@ def generate_launch_description():
     
     world_file_name = 'house.world'
     world_file_path = os.path.join(get_package_share_directory('multi_robot_system'), 'worlds', world_file_name)
-
+    
 
     use_sim_time = LaunchConfiguration('use_sim_time')
     namespace = LaunchConfiguration('namespace')
@@ -27,7 +27,10 @@ def generate_launch_description():
     gazebo = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(
                     get_package_share_directory('gazebo_ros'), 'launch', 'gazebo.launch.py')]),
-                    launch_arguments={'world': world_file_path}.items(),
+                    launch_arguments={
+                        'world': world_file_path,
+                        'use_sim_time': 'true'
+    }.items(),
              )
 
     spawn_entity = Node(package='gazebo_ros', executable='spawn_entity.py',
@@ -44,11 +47,20 @@ def generate_launch_description():
         namespace=namespace,
         parameters=[params]
     )
+    rviz_config_file = os.path.join(pkg_path, 'config', 'lidarcheck.rviz')
+
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        arguments=['-d', rviz_config_file],
+    )
 
     return LaunchDescription([
         DeclareLaunchArgument(
             'use_sim_time',
-            default_value='false',
+            default_value='true',
             description='Use sim time if true'),
         DeclareLaunchArgument(
             'namespace',
@@ -58,4 +70,5 @@ def generate_launch_description():
         node_robot_state_publisher,
         gazebo,
         spawn_entity,
+        rviz_node
     ])

@@ -149,11 +149,11 @@
     <!-- LIDAR LINK -->
     <joint name="/robot2/laser_joint" type="fixed">
         <parent link="/robot2/chassis"/>
-        <child link="/robot2/laser_frame"/>
+        <child link="laser_frame_2"/>
         <origin xyz="0.1 0 0.200" rpy="0 0 0"/>
     </joint>
 
-    <link name="/robot2/laser_frame">
+    <link name="laser_frame_2">
         <visual>
             <geometry>
                 <cylinder radius="0.03" length="0.04"/>
@@ -170,7 +170,7 @@
         </xacro:inertial_cylinder>
     </link>
 
-    <gazebo reference="/robot2/laser_frame">
+    <gazebo reference="laser_frame_2">
         <material>Gazebo/Black</material>
         <sensor name="laser" type="ray">
             <pose> 0 0 0 0 0 0 </pose>
@@ -194,7 +194,7 @@
                     <argument>~/out:=scan_robot2</argument>
                 </ros>
                 <output_type>sensor_msgs/LaserScan</output_type>
-                <frame_name>laser_frame_robot2</frame_name>
+                <frame_name>laser_frame_2</frame_name>
             </plugin>
         </sensor>
     </gazebo>

@@ -2,6 +2,8 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="robot1">
 
     <xacro:include filename="inertia.xacro"/>
+   
+
 
     <material name="white">
         <color rgba="1 1 1 1" />
@@ -150,11 +152,11 @@
     <!-- LIDAR LINK -->
     <joint name="/robot1/laser_joint" type="fixed">
         <parent link="/robot1/chassis"/>
-        <child link="/robot1/laser_frame"/>
+        <child link="laser_frame_1"/>
         <origin xyz="0.1 0 0.200" rpy="0 0 0"/>
     </joint>
 
-    <link name="/robot1/laser_frame">
+    <link name="laser_frame_1">
         <visual>
             <geometry>
                 <cylinder radius="0.03" length="0.04"/>
@@ -171,7 +173,7 @@
         </xacro:inertial_cylinder>
     </link>
 
-    <gazebo reference="/robot1/laser_frame">
+    <gazebo reference="laser_frame_1">
         <material>Gazebo/Black</material>
         <sensor name="laser" type="ray">
             <pose> 0 0 0 0 0 0 </pose>
@@ -195,11 +197,12 @@
                     <argument>~/out:=scan_robot1</argument>
                 </ros>
                 <output_type>sensor_msgs/LaserScan</output_type>
-                <frame_name>laser_frame_robot1</frame_name>
+                <frame_name>laser_frame_1</frame_name>
             </plugin>
         </sensor>
     </gazebo>
 
+    
 
     <!-- CASTER WHEEL LINK -->
 
