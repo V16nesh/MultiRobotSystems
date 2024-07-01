@@ -56,6 +56,13 @@ def generate_launch_description():
         output='screen',
         arguments=['-d', rviz_config_file],
     )
+    slam_toolbox = Node(
+        package='slam_toolbox',
+        executable='sync_slam_toolbox_node',
+        name='slam_toolbox',
+        output='screen',
+        parameters=[os.path.join(pkg_path, 'config', 'slam_toolbox_param1.yaml')]
+    )
 
     return LaunchDescription([
         DeclareLaunchArgument(
@@ -70,5 +77,6 @@ def generate_launch_description():
         node_robot_state_publisher,
         gazebo,
         spawn_entity,
-        rviz_node
+        rviz_node,
+        slam_toolbox
     ])

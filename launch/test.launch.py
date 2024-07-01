@@ -69,18 +69,28 @@ def generate_launch_description():
                                    '-z', '0'],
                         output='screen')
     
-    slam_toolbox = Node(
+    slam_toolbox1 = Node(
         package='slam_toolbox',
         executable='sync_slam_toolbox_node',
         name='slam_toolbox',
         output='screen',
-        remappings=[('/map', '/maprobot1')],
+        remappings=[('/map', '/map1')],
         parameters=[
-            os.path.join(pkg_path, 'config', 'slam_param.yaml'),
-            {'map_frame': 'map_robot1'}  
+            os.path.join(pkg_path, 'config', 'slam_param.yaml')
+        ]
+    )
+    slam_toolbox2 = Node(
+        package='slam_toolbox',
+        executable='sync_slam_toolbox_node',
+        name='slam_toolbox',
+        output='screen',
+        remappings=[('/map', '/map2')],
+        parameters=[
+            os.path.join(pkg_path, 'config', 'slam_param2.yaml')
         ]
     )
 
+    
     def create_teleop_node(robotname, cmd_vel_topic):
         return Node(
             package='teleop_twist_keyboard',
@@ -93,6 +103,15 @@ def generate_launch_description():
     
     teleop_robot1 = create_teleop_node("robot1", "/robot1/cmd_vel")
     teleop_robot2 = create_teleop_node("robot2", "/robot2/cmd_vel")
+
+    map_saver = Node(
+        package='nav2_map_server',
+        executable='map_saver_cli',
+        name='map_saver',
+        output='screen',
+        parameters=[{'save_map_timeout': 2000}],
+        arguments=['-f', os.path.join(pkg_path, 'maps', 'multi')]
+    )
 
    
     return LaunchDescription([
@@ -117,5 +136,7 @@ def generate_launch_description():
         spawn_entity2,
         teleop_robot1,
         teleop_robot2,
-        slam_toolbox
+        slam_toolbox1,
+        slam_toolbox2,
+        map_saver,
     ])
