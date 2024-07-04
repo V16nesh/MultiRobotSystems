@@ -13,7 +13,8 @@ def generate_launch_description():
     namespace2 = LaunchConfiguration('namespace2')
    
     pkg_path = os.path.join(get_package_share_directory('multi_robot_system'))
-    rviz_config_file = os.path.join(pkg_path, 'config', 'multi_spawn.rviz')
+    rviz_config_file1 = os.path.join(pkg_path, 'config', 'robot1.rviz')
+    rviz_config_file2 = os.path.join(pkg_path, 'config', 'robot2.rviz')
     world_file_name = 'house.world'
     world_file_path = os.path.join(pkg_path, 'worlds', world_file_name)
     xacro_file1 = os.path.join(pkg_path, 'urdf', 'bot1.urdf.xacro')
@@ -22,6 +23,7 @@ def generate_launch_description():
     robot_description_config2 = xacro.process_file(xacro_file2)
     params1 = {'robot_description': robot_description_config1.toxml(), 'use_sim_time': use_sim_time}
     params2 = {'robot_description': robot_description_config2.toxml(), 'use_sim_time': use_sim_time}
+    rviz_file = os.path.join(pkg_path, 'config', 'merge_map.rviz')
 
     node_robot_state_publisher1 = Node(
         package='robot_state_publisher',
@@ -38,12 +40,19 @@ def generate_launch_description():
         parameters=[params2]
     )
 
-    rviz_node = Node(
+    rviz_node_1 = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
         output='screen',
-        arguments=['-d', rviz_config_file]
+        arguments=['-d', rviz_config_file1]
+    )
+    rviz_node_2 = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        arguments=['-d', rviz_config_file2]
     )
 
     gazebo_launch = IncludeLaunchDescription(
@@ -89,6 +98,26 @@ def generate_launch_description():
             os.path.join(pkg_path, 'config', 'slam_param2.yaml')
         ]
     )
+    mergemap = Node(
+            package='merge_map',
+            executable='merge_map',
+            output='screen',
+            parameters=[{'use_sim_time': True}]
+    )
+    mergemap_rviz = Node(
+            package='rviz2',
+            executable='rviz2',
+            name='rviz2',
+            output='screen',
+            arguments=['-d', rviz_file],
+            parameters=[{'use_sim_time': True}]
+        )
+    
+    tf = Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            arguments=['0', '0', '0', '0', '0', '0', 'world', 'merge_map']
+        )
 
     
     def create_teleop_node(robotname, cmd_vel_topic):
@@ -131,7 +160,8 @@ def generate_launch_description():
         gazebo_launch,
         node_robot_state_publisher1,
         node_robot_state_publisher2,
-        rviz_node,
+        rviz_node_1,
+        rviz_node_2,
         spawn_entity1,
         spawn_entity2,
         teleop_robot1,
@@ -139,4 +169,7 @@ def generate_launch_description():
         slam_toolbox1,
         slam_toolbox2,
         map_saver,
+        mergemap,
+        mergemap_rviz,
+        tf
     ])
